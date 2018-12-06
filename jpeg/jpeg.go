@@ -5,18 +5,23 @@ import (
 	"io"
 	"log"
 
-	"github.com/chinx/morph"
+	"github.com/chinx/morph/internal"
 )
 
 func init() {
-	morph.RegisterDecoder("jpeg", Decode)
+	internal.RegisterDecoder("jpeg", Decode)
+	internal.RegisterEncoder("jpeg", Encode)
 }
 
-func Decode(r io.Reader) (d morph.Drawer, err error) {
+func Decode(r io.Reader) (d internal.Drawer, err error) {
 	img, err := jpeg.Decode(r)
 	if err != nil {
 		log.Println("failed to decode bmp reader: ", err)
 		return nil, err
 	}
-	return morph.NewImage(img), nil
+	return internal.NewImage(img, "jpeg"), nil
+}
+
+func Encode(w io.Writer, img internal.Drawer) error {
+	return jpeg.Encode(w, img.Drawable(), nil)
 }

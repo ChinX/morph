@@ -1,44 +1,30 @@
-package morph
+package internal
 
 import (
 	"image"
 	"image/color"
 	"image/draw"
-	"io"
-	"log"
-
-	"golang.org/x/image/bmp"
 )
-
-var decoders = make(map[string]decoder)
-
-type decoder func(io.Reader) (Drawer, error)
-
-func RegisterDecoder(format string, dec decoder) {
-	if _, ok := decoders[format]; ok {
-		log.Println("format of decoder is exist: ", format)
-	}
-	decoders[format] = dec
-}
 
 type Drawer interface {
 	Size(widthOrScale float64)
-	Encode(w io.Writer) error
 	Next() bool
 	Reset()
 	Image() image.Image
 	Drawable() draw.Image
+	Format() string
 }
 
 type Image struct {
 	img     image.Image
 	rst     draw.Image
 	rect    image.Rectangle
+	format  string
 	morphed bool
 }
 
-func NewImage(img image.Image) *Image {
-	return &Image{img: img, rect: img.Bounds()}
+func NewImage(img image.Image, format string) *Image {
+	return &Image{img: img, rect: img.Bounds(), format: format}
 }
 
 func (i *Image) Size(widthOrScale float64) {
@@ -59,20 +45,16 @@ func (i *Image) Size(widthOrScale float64) {
 	i.rect = ScaleRect(i.rect, scale)
 }
 
-func (i *Image) Encode(w io.Writer) error {
-	result := i.img
-	if i.rst != nil {
-		result = i.rst
-	}
-	return bmp.Encode(w, result)
-}
-
 func (i *Image) Next() bool {
 	return !i.morphed
 }
 
 func (i *Image) Reset() {
 	i.morphed = false
+}
+
+func (i *Image) Format() string {
+	return i.format
 }
 
 func (i *Image) Image() image.Image {
